@@ -20,9 +20,12 @@ void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct
 int calculate_output(struct NN weights, struct Board current_board);
 void layer_transit(int *res, int* input, int *transit_weights, int n_layer_one, int n_layer_two);
 void generate_new_weights(int *weights, int num_weights);
-int game_play(struct NN ann);
+int game_play(struct NN ann, int size);
 int create_new_element(struct Board in);
 void make_game_move(struct Board b, int direction);
+void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre);
+void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index);
+void print_board(struct Board b);
 
 int main(void){
     struct NN first_instance;
@@ -36,10 +39,31 @@ int main(void){
     generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
     create_new_element(in);
 
+    print_board(in);
+
     output = calculate_output(first_instance, in);
-    
+
     printf("%d\n", output);
     return 0;
+}
+
+void print_board(struct Board b){
+    int sqr_size = (int) sqrt((double) b.size), i, j;
+    for(i = 0; i < b.size; i++){
+        if(i % sqr_size == 0){
+            printf("|\n");
+            for(j = 0; j < 7*sqr_size + 1; j++){
+                printf("_");
+            }
+            printf("\n");
+        }
+        printf("| %4d ", b.board[i]);
+    }
+    printf("|\n");
+    for(j = 0; j < 7*sqr_size + 1; j++){
+        printf("_");
+    }
+    printf("\n");
 }
 
 void initiaize_board(struct Board *in, int size){
@@ -76,10 +100,11 @@ int calculate_output(struct NN weights, struct Board current_board){
     layer_transit(hidden_res, current_board.board, weights.input_layer, weights.in, weights.hid);
     layer_transit(output_res, hidden_res, weights.hidden_layer, weights.hid, weights.out);
 
+    /*
     printf("Hidden:\n");
     for(i = 0; i < weights.hid; i++){
         printf("Index %2d - %5d\n", i, hidden_res[i]);
-    }
+    }*/
 
     printf("Output variable:\n");
     for(i = 0; i < weights.out; i++){
@@ -98,41 +123,48 @@ void layer_transit(int *res, int *input, int *transit_weights, int n_layer_one, 
         res[i] = 0;
         for(j = i * n_layer_one; j < n_layer_one * (i + 1); j++){
             res[i] += (input[j % n_layer_one] * transit_weights[j]);
-            printf("[%d]sum: %5d, just added %d * %d\n", i, res[i], input[j % n_layer_one], transit_weights[j]);
+            /*printf("[%d]sum: %5d, just added %d * %d\n", i, res[i], input[j % n_layer_one], transit_weights[j]);*/
         }
     }
 }
 
-int game_play(struct NN ann){
+int game_play(struct NN ann, int size){
     struct Board b;
     int direction;
-    initiaize_board(&b);
-    while(create_new_element(b) === 0){
+    initiaize_board(&b, size);
+    while(create_new_element(b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(b, direction);
     }
+
+    return b.score;
 }
 
 void make_game_move(struct Board b, int direction){
     /* 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT, 0 = debugging */
-    int i, j, temp1, temp2;
-    int sqr_size = (int)Math.sqrt(Board.size);
+    int sqr_size = (int) sqrt((double) b.size);
     switch(direction){
         case 1:
+            start_recusive_move(b, sqr_size, 0, b.size - sqr_size, sqr_size, sqr_size, 1);
             break;
         case 2:
-            for(i = 0; i < sqr_size; i++){
-                for(j = 4; j < sqr_size; j++){
-                    
-                }
-            }
+            start_recusive_move(b, - sqr_size, b.size - sqr_size, 0, b.size - 2*sqr_size, sqr_size, 1);
             break;
         case 3:
+            start_recusive_move(b, 1, 0, sqr_size - 1, 1, sqr_size, sqr_size);
             break;
         case 4:
+            start_recusive_move(b, -1, sqr_size - 1, 0, sqr_size - 2, sqr_size, sqr_size);
             break;
         default:
             printf("ERROR in make_game_move: input - %d", direction);
+    }
+}
+
+void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre){
+    int i;
+    for(i = 0; i < s; i++){
+        recursive_move(b, movement, start_index + incre*i, max_index + incre*i, current_index + incre*i);
     }
 }
 
@@ -142,7 +174,7 @@ void recursive_move(struct Board b, int movement, int start_index, int max_index
         b.board[current_index] = 0;
 
         if(current_index != max_index && start_index + 2 * movement <= max_index){
-            recursive_move(b, direction, start_index + movement, max_index, start_index + 2 * movement);
+            recursive_move(b, movement, start_index + movement, max_index, start_index + 2 * movement);
         }
     } else if(b.board[start_index] == b.board[current_index]){
         b.board[start_index] = b.board[start_index] * 2;
@@ -150,12 +182,12 @@ void recursive_move(struct Board b, int movement, int start_index, int max_index
         b.score += b.board[start_index];
 
         if(current_index != max_index && start_index + 2 * movement <= max_index){
-            recursive_move(b, direction, start_index + movement, max_index, start_index + 2 * movement);
+            recursive_move(b, movement, start_index + movement, max_index, start_index + 2 * movement);
         }
-    } else {
-        if(current_index != max_index && current_index + movement <= max_index){
-            recursive_move(b, direction, start_index, max_index, start_index + movement);
-        }
+    } else if(b.board[start_index] == 0 && b.board[current_index] == 0 && current_index + movement <= max_index){
+        recursive_move(b, movement, start_index, max_index, current_index + movement);
+    } else if(start_index + movement < max_index){
+        recursive_move(b, movement, start_index + movement, max_index, start_index + 2*movement);
     }
 }
 
