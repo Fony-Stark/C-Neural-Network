@@ -24,8 +24,9 @@ int game_play(struct NN ann, int size);
 int create_new_element(struct Board in);
 void make_game_move(struct Board b, int direction);
 void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre);
-void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index);
+void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int biggerQ);
 void print_board(struct Board b);
+int compare(int a, int b, int method);
 
 int main(void){
     struct NN first_instance;
@@ -37,8 +38,32 @@ int main(void){
     initiaize_nn(in.size, 10, 4, &first_instance);
     generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
     generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
+    
+    create_new_element(in);
+    create_new_element(in);
     create_new_element(in);
 
+    printf("Standard:\n");
+    print_board(in);
+
+    make_game_move(in, 2);
+    printf("DOWN[2]:\n");
+    print_board(in);
+
+    make_game_move(in, 1);
+    printf("UP[1]:\n");
+    print_board(in);
+
+    make_game_move(in, 4);
+    printf("RIGHT[4]:\n");
+    print_board(in);
+
+    make_game_move(in, 3);
+    printf("LEFT[3]:\n");
+    print_board(in);
+
+    make_game_move(in, 2);
+    printf("DOWN[2]:\n");
     print_board(in);
 
     output = calculate_output(first_instance, in);
@@ -51,7 +76,7 @@ void print_board(struct Board b){
     int sqr_size = (int) sqrt((double) b.size), i, j;
     for(i = 0; i < b.size; i++){
         if(i % sqr_size == 0){
-            printf("|\n");
+            (i == 0) ? 1 : printf("|\n");
             for(j = 0; j < 7*sqr_size + 1; j++){
                 printf("_");
             }
@@ -148,7 +173,7 @@ void make_game_move(struct Board b, int direction){
             start_recusive_move(b, sqr_size, 0, b.size - sqr_size, sqr_size, sqr_size, 1);
             break;
         case 2:
-            start_recusive_move(b, - sqr_size, b.size - sqr_size, 0, b.size - 2*sqr_size, sqr_size, 1);
+            start_recusive_move(b, - sqr_size, b.size - sqr_size, 0, b.size - (2*sqr_size), sqr_size, 1);
             break;
         case 3:
             start_recusive_move(b, 1, 0, sqr_size - 1, 1, sqr_size, sqr_size);
@@ -163,31 +188,44 @@ void make_game_move(struct Board b, int direction){
 
 void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre){
     int i;
+    int d = (start_index < max_index) ? 1 : 0;
     for(i = 0; i < s; i++){
-        recursive_move(b, movement, start_index + incre*i, max_index + incre*i, current_index + incre*i);
+        recursive_move(b, movement, start_index + incre*i, max_index + incre*i, current_index + incre*i, d);
     }
 }
 
-void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index){
+void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int biggerQ){
     if(b.board[start_index] == 0 && b.board[current_index] != 0){
         b.board[start_index] = b.board[current_index];
         b.board[current_index] = 0;
 
-        if(current_index != max_index && start_index + 2 * movement <= max_index){
-            recursive_move(b, movement, start_index + movement, max_index, start_index + 2 * movement);
+        recursive_move(b, movement, start_index, max_index, start_index + movement, biggerQ);
+    } else if(b.board[start_index] == 0 && b.board[current_index] == 0){
+        if(compare(current_index + movement, max_index, biggerQ)){
+            recursive_move(b, movement, start_index, max_index, current_index + movement, biggerQ);
         }
     } else if(b.board[start_index] == b.board[current_index]){
         b.board[start_index] = b.board[start_index] * 2;
         b.board[current_index] = 0;
         b.score += b.board[start_index];
 
-        if(current_index != max_index && start_index + 2 * movement <= max_index){
-            recursive_move(b, movement, start_index + movement, max_index, start_index + 2 * movement);
+        if(compare(start_index + 2 * movement, max_index, biggerQ)){
+            recursive_move(b, movement, start_index + movement, max_index, start_index + 2 * movement, biggerQ);
         }
-    } else if(b.board[start_index] == 0 && b.board[current_index] == 0 && current_index + movement <= max_index){
-        recursive_move(b, movement, start_index, max_index, current_index + movement);
-    } else if(start_index + movement < max_index){
-        recursive_move(b, movement, start_index + movement, max_index, start_index + 2*movement);
+    } else if(b.board[start_index] != 0 && b.board[current_index] == 0){
+        if(compare(current_index + movement, max_index, biggerQ)){
+            recursive_move(b, movement, start_index, max_index, current_index + movement, biggerQ);
+        }
+    } else if(compare(start_index + 2*movement, max_index, biggerQ)){
+        recursive_move(b, movement, start_index + movement, max_index, start_index + 2*movement, biggerQ);
+    }
+}
+
+int compare(int a, int b, int method){
+    if(method == 1){
+        return a <= b;
+    } else {
+        return a >= b;
     }
 }
 
