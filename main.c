@@ -4,22 +4,22 @@
 #include <math.h>
 
 struct NN {
-    int *input_layer;
-    int *hidden_layer;
+    double *input_layer;
+    double *hidden_layer;
     int in, hid, out;
 };
 
 struct Board {
     int score;
-    int *board;
+    double *board;
     int size;
 };
 
 void initiaize_board(struct Board *in, int size);
 void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct NN *weights);
 int calculate_output(struct NN weights, struct Board current_board);
-void layer_transit(int *res, int* input, int *transit_weights, int n_layer_one, int n_layer_two);
-void generate_new_weights(int *weights, int num_weights);
+void layer_transit(double *res, double* input, double *transit_weights, int n_layer_one, int n_layer_two);
+void generate_new_weights(double *weights, int num_weights);
 int game_play(struct NN ann, int size);
 int create_new_element(struct Board in);
 void make_game_move(struct Board b, int direction);
@@ -27,48 +27,21 @@ void start_recusive_move(struct Board b, int movement, int start_index, int max_
 void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int biggerQ);
 void print_board(struct Board b);
 int compare(int a, int b, int method);
+int save_weights(char *name_of_file, struct NN weights);
 
 int main(void){
     struct NN first_instance;
-    int output;
-    struct Board in;
+    /*struct Board in;*/
     srand((unsigned)time(NULL));
 
-    initiaize_board(&in, 16);
-    initiaize_nn(in.size, 10, 4, &first_instance);
+    /* initiaize_board(&in, 16); */
+    initiaize_nn(16, 10, 4, &first_instance);
     generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
     generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
-    
-    create_new_element(in);
-    create_new_element(in);
-    create_new_element(in);
 
-    printf("Standard:\n");
-    print_board(in);
+    game_play(first_instance, 16);
 
-    make_game_move(in, 2);
-    printf("DOWN[2]:\n");
-    print_board(in);
-
-    make_game_move(in, 1);
-    printf("UP[1]:\n");
-    print_board(in);
-
-    make_game_move(in, 4);
-    printf("RIGHT[4]:\n");
-    print_board(in);
-
-    make_game_move(in, 3);
-    printf("LEFT[3]:\n");
-    print_board(in);
-
-    make_game_move(in, 2);
-    printf("DOWN[2]:\n");
-    print_board(in);
-
-    output = calculate_output(first_instance, in);
-
-    printf("%d\n", output);
+    save_weights("hello.txt", first_instance);
     return 0;
 }
 
@@ -82,7 +55,7 @@ void print_board(struct Board b){
             }
             printf("\n");
         }
-        printf("| %4d ", b.board[i]);
+        printf("| %4.0f ", b.board[i]);
     }
     printf("|\n");
     for(j = 0; j < 7*sqr_size + 1; j++){
@@ -93,7 +66,7 @@ void print_board(struct Board b){
 
 void initiaize_board(struct Board *in, int size){
     int i;
-    in->board = calloc(size, sizeof(int));
+    in->board = calloc(size, sizeof(double));
     in->score = 0;
     in->size = size;
     for(i = 0; i < size; i++){
@@ -102,14 +75,14 @@ void initiaize_board(struct Board *in, int size){
 }
 
 void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct NN *weights){
-    weights->input_layer = (int*)calloc(neurons_input * neurons_hidden, sizeof(int));
-    weights->hidden_layer = (int*)calloc(neurons_hidden * neurons_out, sizeof(int));
+    weights->input_layer = (double*)calloc(neurons_input * neurons_hidden, sizeof(double));
+    weights->hidden_layer = (double*)calloc(neurons_hidden * neurons_out, sizeof(double));
     weights->in = neurons_input;
     weights->hid = neurons_hidden;
     weights->out = neurons_out;
 }
 
-void generate_new_weights(int *weights, int num_weights){
+void generate_new_weights(double *weights, int num_weights){
     int i = 0;
     for(; i < num_weights; i++){
         weights[i] = rand() % 10;
@@ -118,9 +91,10 @@ void generate_new_weights(int *weights, int num_weights){
 
 int calculate_output(struct NN weights, struct Board current_board){
     /* 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT, 0 = debugging */
-    int *hidden_res, *output_res, output_variable = 0, output_value = 0, i;
-    hidden_res = calloc(weights.hid, sizeof(int));
-    output_res = calloc(weights.out, sizeof(int));
+    double *hidden_res, *output_res, output_variable = 0;
+    int output_value = 0, i;
+    hidden_res = calloc(weights.hid, sizeof(double));
+    output_res = calloc(weights.out, sizeof(double));
 
     layer_transit(hidden_res, current_board.board, weights.input_layer, weights.in, weights.hid);
     layer_transit(output_res, hidden_res, weights.hidden_layer, weights.hid, weights.out);
@@ -131,9 +105,9 @@ int calculate_output(struct NN weights, struct Board current_board){
         printf("Index %2d - %5d\n", i, hidden_res[i]);
     }*/
 
-    printf("Output variable:\n");
+    /*printf("Output variable:\n");*/
     for(i = 0; i < weights.out; i++){
-        printf("Value %2d had %4d votes.\n", i+1, output_res[i]);
+        /*printf("Value %2d had %4.0f votes.\n", i+1, output_res[i]);*/
         if(output_value < output_res[i]){
             output_variable = i+1;
             output_value = output_res[i];
@@ -142,7 +116,7 @@ int calculate_output(struct NN weights, struct Board current_board){
     return output_variable;
 }
 
-void layer_transit(int *res, int *input, int *transit_weights, int n_layer_one, int n_layer_two){
+void layer_transit(double *res, double *input, double *transit_weights, int n_layer_one, int n_layer_two){
     int i, j;
     for(i = 0; i < n_layer_two; i++){
         res[i] = 0;
@@ -160,6 +134,8 @@ int game_play(struct NN ann, int size){
     while(create_new_element(b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(b, direction);
+        printf("The direction was: %d\n", direction);
+        print_board(b);
     }
 
     return b.score;
@@ -252,4 +228,19 @@ int create_new_element(struct Board in){
 
     in.board[empty_indexs[rand() % j]] = rand_value;
     return 0;
+}
+
+int save_weights(char *name_of_file, struct NN weights){
+    int i;
+    FILE *fp;
+    fp = fopen(name_of_file, "w+");
+    for(i = 0; i < weights.in * weights.hid; i++){
+        fprintf(fp, "%f", weights.input_layer[i]);
+    }
+    for(i = 0; i < weights.hid * weights.out; i++){
+        fprintf(fp, "%f", weights.hidden_layer[i]);
+    }
+    fclose(fp);
+
+    return 1;
 }
