@@ -7,6 +7,7 @@ struct NN {
     double *input_layer;
     double *hidden_layer;
     int in, hid, out;
+    int score;
 };
 
 struct Board {
@@ -28,6 +29,10 @@ void recursive_move(struct Board b, int movement, int start_index, int max_index
 void print_board(struct Board b);
 int compare(int a, int b, int method);
 int save_weights(char *name_of_file, struct NN weights);
+void swap(struct NN *s, int index_a, int index_b);
+int partition(struct NN *s, int left, int right, int pivot);
+void swap(struct NN *s, int index_a, int index_b);
+void quickSort(struct NN *s, int left, int right);
 
 int main(void){
     struct NN first_instance;
@@ -85,7 +90,7 @@ void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct
 void generate_new_weights(double *weights, int num_weights){
     int i = 0;
     for(; i < num_weights; i++){
-        weights[i] = rand() % 10;
+        weights[i] = rand() % 10 + 1;
     }
 }
 
@@ -134,8 +139,6 @@ int game_play(struct NN ann, int size){
     while(create_new_element(b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(b, direction);
-        printf("The direction was: %d\n", direction);
-        print_board(b);
     }
 
     return b.score;
@@ -243,4 +246,67 @@ int save_weights(char *name_of_file, struct NN weights){
     fclose(fp);
 
     return 1;
+}
+
+void train_NN(struct NN start_weigts, int NN_per_generation, int size){
+    struct NN *generation;
+    int i;
+
+    generation = calloc(NN_per_generation, sizeof(struct NN));
+    for(i = 0; i < NN_per_generation; i++){
+        generation[i].score = game_play(generation[i], size);
+    }
+    
+    for(i = 0; i < NN_per_generation; i++){
+        generation[i].score = game_play(generation[i],size);
+    }
+
+    quickSort(generation, 0, NN_per_generation - 1);
+
+    printf("%d %d", start_weigts.score, size);
+}
+
+void swap(struct NN *s, int index_a, int index_b){
+    struct NN temp = s[index_a];
+    s[index_a] = s[index_b];
+    s[index_b] = temp;
+}
+
+int partition(struct NN *s, int left, int right, int pivot){
+    int leftPointer = left - 1;
+    int rightPointer = right;
+    int true = 1;
+
+    while(true){
+        while(s[++leftPointer].score < pivot){
+            /* Do nothing. Why? Because website says so. */
+        }
+
+        while(rightPointer > 0 && s[--rightPointer].score > pivot){
+            /* Do nothing. Is this smart? I hope so. Does it work? Yes. */
+        }
+
+        if(leftPointer >= rightPointer){
+            break;
+        } else{
+            swap(s, leftPointer, rightPointer);
+        }
+    }
+
+    swap(s, leftPointer, right);
+
+    return leftPointer;
+}
+
+void quickSort(struct NN *s, int left, int right){
+    int pivot;
+    int partitionPoint;
+    if(right-left <= 0){
+        return;
+    } else {
+        pivot = s[right].score;
+        partitionPoint = partition(s, left, right, pivot);
+        quickSort(s, left, partitionPoint - 1);
+        quickSort(s, partitionPoint+1, right); 
+    }
 }
