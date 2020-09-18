@@ -21,9 +21,9 @@ void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct
 int calculate_output(struct NN weights, struct Board current_board);
 void layer_transit(double *res, double* input, double *transit_weights, int n_layer_one, int n_layer_two);
 void generate_new_weights(double *weights, int num_weights);
-int game_play(struct NN ann, int size);
+int game_play(struct NN ann, int size, int _bug_fix);
 int create_new_element(struct Board in);
-void make_game_move(struct Board b, int direction);
+void make_game_move(struct Board b, int direction, int _bug_fix);
 void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre);
 void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int biggerQ);
 void print_board(struct Board b);
@@ -136,19 +136,19 @@ void layer_transit(double *res, double *input, double *transit_weights, int n_la
     }
 }
 
-int game_play(struct NN ann, int size){
+int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
     int direction;
     initiaize_board(&b, size);
     while(create_new_element(b) == 0){
         direction = calculate_output(ann, b);
-        make_game_move(b, direction);
+        make_game_move(b, direction, _bug_fix);
     }
 
     return b.score;
 }
 
-void make_game_move(struct Board b, int direction){
+void make_game_move(struct Board b, int direction, int _bug_fix){
     /* 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT, 0 = debugging */
     int sqr_size = (int) sqrt((double) b.size);
     switch(direction){
@@ -165,7 +165,7 @@ void make_game_move(struct Board b, int direction){
             start_recusive_move(b, -1, sqr_size - 1, 0, sqr_size - 2, sqr_size, sqr_size);
             break;
         default:
-            printf("ERROR in make_game_move: input - %d\n", direction);
+            printf("ERROR in make_game_move: input - %d nr: %d\n", direction, _bug_fix);
     }
 }
 
@@ -266,7 +266,7 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     size++;
     while(1){
         for(i = 0; i < NN_per_generation; i++){
-            generation[i].score = game_play(generation[i], size);
+            generation[i].score = game_play(generation[i], size, i);
         }
 
         quickSort(generation, 0, NN_per_generation - 1);
