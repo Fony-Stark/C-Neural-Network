@@ -303,8 +303,6 @@ void kill_half_generation(struct NN *gen, int generation_size, int kill){
         } else {
             rand_fact = rand() % (int)ceil(size_gen * 0.1);
         }
-        free(gen[(int)rand_fact].input_layer);
-        free(gen[(int)rand_fact].hidden_layer);
         gen[(int)rand_fact] = empty;
 
         fix_arr(gen, (int)rand_fact, size_gen - i - 1);
