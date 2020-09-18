@@ -341,13 +341,13 @@ void rebuild_generation(struct NN *gen, int start_index, int max_index){
 void create_child(struct NN *gen, int parrent_index, int child_index){
     int i;
     for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
-        gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
-        gen[child_index].input_layer[i] -= gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
+        gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.5 * ((rand() % 100000) / 100000);
+        gen[child_index].input_layer[i] -= gen[parrent_index].input_layer[i] * 0.5 * ((rand() % 100000) / 100000);
     }
 
     for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
-        gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.1 * ((rand() % 100000) / 100000);
-        gen[child_index].hidden_layer[i] -= gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
+        gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.5 * ((rand() % 100000) / 100000);
+        gen[child_index].hidden_layer[i] -= gen[parrent_index].input_layer[i] * 0.5 * ((rand() % 100000) / 100000);
     }
 }
 
