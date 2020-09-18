@@ -45,6 +45,7 @@ int main(void){
     srand((unsigned)time(NULL));
 
     /* initiaize_board(&in, 16); */
+    first_instance.input_layer = NULL;
     initiaize_nn(16, 10, 4, &first_instance);
     generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
     generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
@@ -84,8 +85,10 @@ void initiaize_board(struct Board *in, int size){
 }
 
 void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct NN *weights){
-    weights->input_layer = (double*)calloc(neurons_input * neurons_hidden, sizeof(double));
-    weights->hidden_layer = (double*)calloc(neurons_hidden * neurons_out, sizeof(double));
+    if(weights->input_layer == NULL){
+        weights->input_layer = (double*)calloc(neurons_input * neurons_hidden, sizeof(double));
+        weights->hidden_layer = (double*)calloc(neurons_hidden * neurons_out, sizeof(double));
+    }
     weights->in = neurons_input;
     weights->hid = neurons_hidden;
     weights->out = neurons_out;
@@ -122,6 +125,8 @@ int calculate_output(struct NN weights, struct Board current_board){
             output_value = output_res[i];
         }
     }
+    free(hidden_res);
+    free(output_res);
     return output_variable;
 }
 
@@ -230,6 +235,7 @@ int create_new_element(struct Board *in){
         }
     }
     if(j == 0){
+        free(empty_indexs);
         return -1;
     }
     rand_value = rand() % 5;
@@ -239,6 +245,7 @@ int create_new_element(struct Board *in){
     in->score += rand_value;
 
     in->board[empty_indexs[index]] = rand_value;
+    free(empty_indexs);
     return 0;
 }
 
@@ -247,10 +254,10 @@ int save_weights(char *name_of_file, struct NN weights){
     FILE *fp;
     fp = fopen(name_of_file, "w+");
     for(i = 0; i < weights.in * weights.hid; i++){
-        fprintf(fp, "%f", weights.input_layer[i]);
+        fprintf(fp, "%f ", weights.input_layer[i]);
     }
     for(i = 0; i < weights.hid * weights.out; i++){
-        fprintf(fp, "%f", weights.hidden_layer[i]);
+        fprintf(fp, "%f ", weights.hidden_layer[i]);
     }   
     fclose(fp);
 
@@ -259,7 +266,7 @@ int save_weights(char *name_of_file, struct NN weights){
 
 void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     struct NN *generation;
-    int i, j;
+    int i, j, average, best;
 
     generation = calloc(NN_per_generation, sizeof(struct NN));
     generation[0] = start_weigts;
@@ -269,22 +276,28 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     } 
     j = 0;
     while(1){
+        average = 0;
         for(i = 0; i < NN_per_generation; i++){
             generation[i].score = game_play(generation[i], size, i);
         }
-
+        for(i = 0; i < NN_per_generation; i++){
+            average += generation[i].score;
+        }
+        average = average/200;
+        if(average > best){
+            best = average;
+        }
         quickSort(generation, 0, NN_per_generation - 1);
         
         if(j % 50 == 0){
-            printf("this is generation [%5d] - The best NN got %5d\n", j, generation[0].score);
+            printf("this is generation [%5d] - The best NN got %5d - Average: %5d - Best: %5d - dif = %5d\n", j, generation[0].score, average, best, best - average);
         }
         if(j % 500){
             save_weights("weights", generation[0]);
         }
-
         kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
         rebuild_generation(generation, NN_per_generation/2 - 1, NN_per_generation);
-        j++; 
+        j++;
     }
 }
 
@@ -300,6 +313,9 @@ void kill_half_generation(struct NN *gen, int generation_size, int kill){
             rand_fact = rand() % (int)ceil(size_gen * 0.8) + (int)ceil(size_gen * 0.1);
         } else {
             rand_fact = rand() % (int)ceil(size_gen * 0.1);
+        }
+        if(rand_fact > generation_size - i - 1){
+            rand_fact = generation_size - i - 1;
         }
         initiaize_nn(gen[0].in, gen[0].hid, gen[0].out, &gen[(int)rand_fact]);
         fix_arr(gen, (int)rand_fact, size_gen - i - 1);
@@ -351,11 +367,11 @@ int partition(struct NN *s, int left, int right, int pivot){
     int true = 1;
 
     while(true){
-        while(s[++leftPointer].score < pivot){
+        while(s[++leftPointer].score > pivot){
             /* Do nothing. Why? Because website says so. */
         }
 
-        while(rightPointer > 0 && s[--rightPointer].score > pivot){
+        while(rightPointer > 0 && s[--rightPointer].score < pivot){
             /* Do nothing. Is this smart? I hope so. Does it work? Yes. */
         }
 
