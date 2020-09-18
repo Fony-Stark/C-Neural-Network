@@ -138,15 +138,14 @@ void layer_transit(double *res, double *input, double *transit_weights, int n_la
 
 int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
-    int direction, d;
+    int direction;
     initiaize_board(&b, size);
     while(create_new_element(&b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(&b, direction, _bug_fix);
     }  
-    d = b.score;
-    free(b);
-    return d;
+    free(b.board);
+    return b.score;
 }
 
 void make_game_move(struct Board *b, int direction, int _bug_fix){
