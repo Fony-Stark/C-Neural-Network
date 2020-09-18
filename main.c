@@ -35,6 +35,9 @@ void swap(struct NN *s, int index_a, int index_b);
 void quickSort(struct NN *s, int left, int right);
 void kill_half_generation(struct NN *gen, int size_gen, int kill);
 void fix_arr(struct NN *gen, int index_empty, int max_index);
+void create_child(struct NN *gen, int parrent_index, int child_index);
+void rebuild_generation(struct NN *gen, int start_index);
+void train_NN(struct NN start_weigts, int NN_per_generation, int size);
 
 int main(void){
     struct NN first_instance;
@@ -46,9 +49,8 @@ int main(void){
     generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
     generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
 
-    game_play(first_instance, 16);
+    train_NN(first_instance, 200, 16);
 
-    save_weights("hello.txt", first_instance);
     return 0;
 }
 
@@ -244,7 +246,7 @@ int save_weights(char *name_of_file, struct NN weights){
     }
     for(i = 0; i < weights.hid * weights.out; i++){
         fprintf(fp, "%f", weights.hidden_layer[i]);
-    }
+    }   
     fclose(fp);
 
     return 1;
@@ -252,20 +254,34 @@ int save_weights(char *name_of_file, struct NN weights){
 
 void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     struct NN *generation;
-    int i;
+    int i, j;
 
     generation = calloc(NN_per_generation, sizeof(struct NN));
-    for(i = 0; i < NN_per_generation; i++){
-        generation[i].score = game_play(generation[i], size);
-    }
-    
-    for(i = 0; i < NN_per_generation; i++){
-        generation[i].score = game_play(generation[i],size);
-    }
+    generation[0] = start_weigts;
+    for(i = 1; i < NN_per_generation; i++){
+        initiaize_nn(generation[0].in, generation[0].hid, generation[0].out, &generation[i]);
+        create_child(generation, 0, i);
+    } 
+    j = 0;
+    size++;
+    while(1){
+        for(i = 0; i < NN_per_generation; i++){
+            generation[i].score = game_play(generation[i], size);
+        }
 
-    quickSort(generation, 0, NN_per_generation - 1);
+        quickSort(generation, 0, NN_per_generation - 1);
+        kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
+        rebuild_generation(generation, NN_per_generation/2);
+        if(j % 50){
+            printf("this is generation [%5d] - The best NN got %5d\n", j, generation[0].score);
+        }
 
-    printf("%d %d", start_weigts.score, size);
+        if(j % 500){
+            save_weights("weights", generation[0]);
+        }
+        j++; 
+        break;
+    }
 }
 
 void kill_half_generation(struct NN *gen, int generation_size, int kill){
@@ -283,9 +299,30 @@ void kill_half_generation(struct NN *gen, int generation_size, int kill){
         } else {
             rand_fact = rand() % (int)ceil(size_gen * 0.1);
         }
-        gen[rand_fact] = empty;
+        gen[(int)rand_fact] = empty;
 
-        fix_arr(gen, i, size_gen);
+        fix_arr(gen, (int)rand_fact, size_gen - i - 1);
+    }
+}
+
+void rebuild_generation(struct NN *gen, int start_index){
+    int i;
+    for(i = 0; i < start_index; i++){
+        if(i >= start_index*2){
+            break;
+        }
+        create_child(gen, i, start_index+i);
+    }
+}
+
+void create_child(struct NN *gen, int parrent_index, int child_index){
+    int i;
+    for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
+        gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
+    }
+
+    for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
+        gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.1 * ((rand() % 100000) / 100000);
     }
 }
 
