@@ -138,14 +138,15 @@ void layer_transit(double *res, double *input, double *transit_weights, int n_la
 
 int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
-    int direction;
+    int direction, d;
     initiaize_board(&b, size);
     while(create_new_element(&b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(&b, direction, _bug_fix);
-    }
-
-    return b.score;
+    }  
+    d = b.score;
+    free(b);
+    return d;
 }
 
 void make_game_move(struct Board *b, int direction, int _bug_fix){
@@ -275,7 +276,7 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
 
         quickSort(generation, 0, NN_per_generation - 1);
         
-        if(j % 20 == 0){
+        if(j % 50 == 0){
             printf("this is generation [%5d] - The best NN got %5d\n", j, generation[0].score);
         }
         if(j % 500){
