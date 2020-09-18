@@ -97,7 +97,7 @@ void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct
 void generate_new_weights(double *weights, int num_weights){
     int i = 0;
     for(; i < num_weights; i++){
-        weights[i] = rand() % 10 + 1;
+        weights[i] = (double)(rand() % 100000 + 1) / 10000;
     }
 }
 
