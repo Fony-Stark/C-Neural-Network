@@ -36,7 +36,7 @@ void quickSort(struct NN *s, int left, int right);
 void kill_half_generation(struct NN *gen, int size_gen, int kill);
 void fix_arr(struct NN *gen, int index_empty, int max_index);
 void create_child(struct NN *gen, int parrent_index, int child_index);
-void rebuild_generation(struct NN *gen, int start_index);
+void rebuild_generation(struct NN *gen, int start_index, int max_index);
 void train_NN(struct NN start_weigts, int NN_per_generation, int size);
 
 int main(void){
@@ -165,7 +165,7 @@ void make_game_move(struct Board b, int direction){
             start_recusive_move(b, -1, sqr_size - 1, 0, sqr_size - 2, sqr_size, sqr_size);
             break;
         default:
-            printf("ERROR in make_game_move: input - %d", direction);
+            printf("ERROR in make_game_move: input - %d\n", direction);
     }
 }
 
@@ -271,7 +271,7 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
 
         quickSort(generation, 0, NN_per_generation - 1);
         kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
-        rebuild_generation(generation, NN_per_generation/2);
+        rebuild_generation(generation, NN_per_generation/2 - 1, NN_per_generation);
         if(j % 50){
             printf("this is generation [%5d] - The best NN got %5d\n", j, generation[0].score);
         }
@@ -305,13 +305,18 @@ void kill_half_generation(struct NN *gen, int generation_size, int kill){
     }
 }
 
-void rebuild_generation(struct NN *gen, int start_index){
-    int i;
+void rebuild_generation(struct NN *gen, int start_index, int max_index){
+    int i, j;
     for(i = 0; i < start_index; i++){
-        if(i >= start_index*2){
+        if(max_index <= start_index*2){
             break;
         }
         create_child(gen, i, start_index+i);
+    }
+    j=0;
+    while(i + start_index < max_index){
+        create_child(gen, j, start_index+i);
+        j++;i++;
     }
 }
 
