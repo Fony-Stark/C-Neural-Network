@@ -290,8 +290,6 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
 
 void kill_half_generation(struct NN *gen, int generation_size, int kill){
     int i, rand_fact, size_gen = generation_size;
-    struct NN empty;
-    initiaize_nn(gen[0].in, gen[0].hid, gen[0].out, &empty);
     for(i = 0; i < kill; i++){
         rand_fact = rand() % 100;
         if(rand_fact > 20){
@@ -303,8 +301,7 @@ void kill_half_generation(struct NN *gen, int generation_size, int kill){
         } else {
             rand_fact = rand() % (int)ceil(size_gen * 0.1);
         }
-        gen[(int)rand_fact] = empty;
-
+        initiaize_nn(gen[0].in, gen[0].hid, gen[0].out, &gen[(int)rand_fact]);
         fix_arr(gen, (int)rand_fact, size_gen - i - 1);
     }
 }
