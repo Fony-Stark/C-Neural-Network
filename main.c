@@ -22,10 +22,10 @@ int calculate_output(struct NN weights, struct Board current_board);
 void layer_transit(double *res, double* input, double *transit_weights, int n_layer_one, int n_layer_two);
 void generate_new_weights(double *weights, int num_weights);
 int game_play(struct NN ann, int size, int _bug_fix);
-int create_new_element(struct Board in);
-void make_game_move(struct Board b, int direction, int _bug_fix);
-void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre);
-void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int biggerQ);
+int create_new_element(struct Board *in);
+void make_game_move(struct Board *b, int direction, int _bug_fix);
+void start_recusive_move(struct Board *b, int movement, int start_index, int max_index, int current_index, int s, int incre);
+void recursive_move(struct Board *b, int movement, int start_index, int max_index, int current_index, int biggerQ);
 void print_board(struct Board b);
 int compare(int a, int b, int method);
 int save_weights(char *name_of_file, struct NN weights);
@@ -140,36 +140,38 @@ int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
     int direction;
     initiaize_board(&b, size);
-    while(create_new_element(b) == 0){
+    while(create_new_element(&b) == 0){
         direction = calculate_output(ann, b);
-        make_game_move(b, direction, _bug_fix);
+        make_game_move(&b, direction, _bug_fix);
     }
 
     return b.score;
 }
 
-void make_game_move(struct Board b, int direction, int _bug_fix){
+void make_game_move(struct Board *b, int direction, int _bug_fix){
     /* 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT, 0 = debugging */
-    int sqr_size = (int) sqrt((double) b.size);
+    int sqr_size = (int) sqrt((double) b->size);
     switch(direction){
+        /*                   Board, Movement    , Start_index       , max_index               , current_index, s, incre*/
         case 1:
-            start_recusive_move(b, sqr_size, 0, b.size - sqr_size, sqr_size, sqr_size, 1);
+            start_recusive_move(b, sqr_size     , 0                 , b->size - sqr_size       , sqr_size, sqr_size, 1);
             break;
         case 2:
-            start_recusive_move(b, - sqr_size, b.size - sqr_size, 0, b.size - (2*sqr_size), sqr_size, 1);
+            start_recusive_move(b, - sqr_size   , b->size - sqr_size , 0                       , b->size - (2*sqr_size), sqr_size, 1);
             break;
         case 3:
-            start_recusive_move(b, 1, 0, sqr_size - 1, 1, sqr_size, sqr_size);
+            start_recusive_move(b, 1            , 0                 , sqr_size - 1            , 1, sqr_size, sqr_size);
             break;
         case 4:
-            start_recusive_move(b, -1, sqr_size - 1, 0, sqr_size - 2, sqr_size, sqr_size);
+            start_recusive_move(b, -1           , sqr_size - 1      , 0                       , sqr_size - 2, sqr_size, sqr_size);
             break;
         default:
             printf("ERROR in make_game_move: input - %d nr: %d\n", direction, _bug_fix);
+            print_board(*b);
     }
 }
 
-void start_recusive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int s, int incre){
+void start_recusive_move(struct Board *b, int movement, int start_index, int max_index, int current_index, int s, int incre){
     int i;
     int d = (start_index < max_index) ? 1 : 0;
     for(i = 0; i < s; i++){
@@ -177,25 +179,25 @@ void start_recusive_move(struct Board b, int movement, int start_index, int max_
     }
 }
 
-void recursive_move(struct Board b, int movement, int start_index, int max_index, int current_index, int biggerQ){
-    if(b.board[start_index] == 0 && b.board[current_index] != 0){
-        b.board[start_index] = b.board[current_index];
-        b.board[current_index] = 0;
+void recursive_move(struct Board *b, int movement, int start_index, int max_index, int current_index, int biggerQ){
+    if(b->board[start_index] == 0 && b->board[current_index] != 0){
+        b->board[start_index] = b->board[current_index];
+        b->board[current_index] = 0;
 
         recursive_move(b, movement, start_index, max_index, start_index + movement, biggerQ);
-    } else if(b.board[start_index] == 0 && b.board[current_index] == 0){
+    } else if(b->board[start_index] == 0 && b->board[current_index] == 0){
         if(compare(current_index + movement, max_index, biggerQ)){
             recursive_move(b, movement, start_index, max_index, current_index + movement, biggerQ);
         }
-    } else if(b.board[start_index] == b.board[current_index]){
-        b.board[start_index] = b.board[start_index] * 2;
-        b.board[current_index] = 0;
-        b.score += b.board[start_index];
+    } else if(b->board[start_index] == b->board[current_index]){
+        b->board[start_index] = b->board[start_index] * 2;
+        b->board[current_index] = 0;
+        b->score += b->board[start_index];
 
         if(compare(start_index + 2 * movement, max_index, biggerQ)){
             recursive_move(b, movement, start_index + movement, max_index, start_index + 2 * movement, biggerQ);
         }
-    } else if(b.board[start_index] != 0 && b.board[current_index] == 0){
+    } else if(b->board[start_index] != 0 && b->board[current_index] == 0){
         if(compare(current_index + movement, max_index, biggerQ)){
             recursive_move(b, movement, start_index, max_index, current_index + movement, biggerQ);
         }
@@ -212,17 +214,17 @@ int compare(int a, int b, int method){
     }
 }
 
-int create_new_element(struct Board in){
-    int *empty_indexs, i, j = 0, rand_value;
+int create_new_element(struct Board *in){
+    int *empty_indexs, i, j = 0, rand_value, index;
 
-    empty_indexs = calloc(in.size, sizeof(int));
+    empty_indexs = calloc(in->size, sizeof(int));
 
     empty_indexs[0] = -1;
-    for(i = 0; i < in.size; i++){
-        if(in.board[i] == 0){
+    for(i = 0; i < in->size; i++){
+        if(in->board[i] == 0){
             empty_indexs[j] = i;
             j++;
-            if(j < in.size){
+            if(j < in->size){
                 empty_indexs[j] = -1;
             }
         }
@@ -232,8 +234,11 @@ int create_new_element(struct Board in){
     }
     rand_value = rand() % 5;
     rand_value = (rand_value < 4) ? 2 : 4;
+    index = rand() % j;
 
-    in.board[empty_indexs[rand() % j]] = rand_value;
+    in->score += rand_value;
+
+    in->board[empty_indexs[index]] = rand_value;
     return 0;
 }
 
@@ -263,24 +268,23 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
         create_child(generation, 0, i);
     } 
     j = 0;
-    size++;
     while(1){
         for(i = 0; i < NN_per_generation; i++){
             generation[i].score = game_play(generation[i], size, i);
         }
 
         quickSort(generation, 0, NN_per_generation - 1);
-        kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
-        rebuild_generation(generation, NN_per_generation/2 - 1, NN_per_generation);
-        if(j % 50){
+        
+        if(j % 20 == 0){
             printf("this is generation [%5d] - The best NN got %5d\n", j, generation[0].score);
         }
-
         if(j % 500){
             save_weights("weights", generation[0]);
         }
+
+        kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
+        rebuild_generation(generation, NN_per_generation/2 - 1, NN_per_generation);
         j++; 
-        break;
     }
 }
 
@@ -316,7 +320,8 @@ void rebuild_generation(struct NN *gen, int start_index, int max_index){
     j=0;
     while(i + start_index < max_index){
         create_child(gen, j, start_index+i);
-        j++;i++;
+        j++;
+        i++;
     }
 }
 
@@ -324,10 +329,12 @@ void create_child(struct NN *gen, int parrent_index, int child_index){
     int i;
     for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
         gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
+        gen[child_index].input_layer[i] -= gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
     }
 
     for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
         gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.1 * ((rand() % 100000) / 100000);
+        gen[child_index].hidden_layer[i] -= gen[parrent_index].input_layer[i] * 0.1 * ((rand() % 100000) / 100000);
     }
 }
 
