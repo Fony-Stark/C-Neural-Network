@@ -266,7 +266,7 @@ int save_weights(char *name_of_file, struct NN weights){
 
 void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     struct NN *generation;
-    int i, j, average, best;
+    int i, j, average, best = 0;
 
     generation = calloc(NN_per_generation, sizeof(struct NN));
     generation[0] = start_weigts;
@@ -290,7 +290,7 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
         quickSort(generation, 0, NN_per_generation - 1);
         
         if(j % 50 == 0){
-            printf("this is generation [%5d] - The best NN got %5d - Average: %5d - Best: %5d - dif = %5d\n", j, generation[0].score, average, best, best - average);
+            printf("this is generation [%5d] - The best NN got %5d - Average: %5d - Best: %5d - dif = %5d\n", j, generation[0].score, average, best, average - best);
         }
         if(j % 500){
             save_weights("weights", generation[0]);
