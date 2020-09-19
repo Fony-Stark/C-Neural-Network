@@ -20,6 +20,7 @@ void initiaize_board(struct Board *in, int size);
 void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct NN *weights);
 int calculate_output(struct NN weights, struct Board current_board);
 void layer_transit(double *res, double* input, double *transit_weights, int n_layer_one, int n_layer_two);
+double sigmoid(double d);
 void generate_new_weights(double *weights, int num_weights);
 int game_play(struct NN ann, int size, int _bug_fix);
 int create_new_element(struct Board *in);
@@ -138,10 +139,14 @@ void layer_transit(double *res, double *input, double *transit_weights, int n_la
     for(i = 0; i < n_layer_two; i++){
         res[i] = 0;
         for(j = i * n_layer_one; j < n_layer_one * (i + 1); j++){
-            res[i] += (input[j % n_layer_one] * transit_weights[j]);
+            res[i] += sigmoid(input[j % n_layer_one]) * transit_weights[j];
             /*printf("[%d]sum: %5d, just added %d * %d\n", i, res[i], input[j % n_layer_one], transit_weights[j]);*/
         }
     }
+}
+
+double sigmoid(double d){
+    return (d/(sqrt(1 + pow(d, 2))));
 }
 
 int game_play(struct NN ann, int size, int _bug_fix){
@@ -409,17 +414,17 @@ void create_child(struct NN *gen, int parrent_index, int child_index){
     int i;
     for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
         if(rand() % 2 == 0){
-            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * 0.005;
         } else {
-            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.005;
         }
     }
 
     for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
         if(rand() % 2 == 0){
-            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.005;
         } else {
-            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].input_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].hidden_layer[i] * 0.005;
         }
     }
 }
