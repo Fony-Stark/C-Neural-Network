@@ -38,6 +38,7 @@ void fix_arr(struct NN *gen, int index_empty, int max_index);
 void create_child(struct NN *gen, int parrent_index, int child_index);
 void rebuild_generation(struct NN *gen, int start_index, int max_index);
 void train_NN(struct NN start_weigts, int NN_per_generation, int size);
+int load_weights(char *name_of_file, struct NN weights);
 
 int main(void){
     struct NN first_instance;
@@ -47,8 +48,10 @@ int main(void){
     /* initiaize_board(&in, 16); */
     first_instance.input_layer = NULL;
     initiaize_nn(16, 10, 4, &first_instance);
-    generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
-    generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
+    if(load_weights("./weights",first_instance) == 404){
+        generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
+        generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
+    }
 
     train_NN(first_instance, 200, 16);
 
@@ -249,6 +252,70 @@ int create_new_element(struct Board *in){
     return 0;
 }
 
+int load_weights(char *name_of_file, struct NN weights){
+    int i, j, integer, decimal, g;
+    char temp;
+    char number[255];
+    FILE *fp;
+    fp = fopen(name_of_file, "r");
+    if(fp == NULL){
+        printf("I couldn't load weights\n");
+        return 404;
+    } else {
+        printf("I loaded weights\n");
+        for(i = 0; i < (weights.in * weights.hid); i++){
+            j = 0;
+            do{
+                temp = (char)fgetc(fp);
+                if(temp == ' '){
+                    break;
+                }
+                number[j] = temp;
+                j++;
+            }while(temp != ' ');
+            sscanf(number," %d.%d", &integer, &decimal);
+            weights.input_layer[i] = (double)integer;
+            if(decimal > 0){
+                g=1;
+                while(1){
+                    if(decimal < pow(10,g)){
+                        weights.input_layer[i] += (double)decimal * pow(10, -g);
+                        break;
+                    }
+                    g++;
+                }
+            }
+        }
+
+        for(i = 0; i < (weights.out * weights.hid); i++){
+            j = 0;
+            do{
+                temp = (char)fgetc(fp);
+                if(temp == ' '){
+                    break;
+                }
+                number[j] = temp;
+                j++;
+            }while(temp != ' ');
+            
+            sscanf(number," %d.%d", &integer, &decimal);
+            weights.hidden_layer[i] = (double)integer;
+            if(decimal > 0){
+                g=1;
+                while(1){
+                    if(decimal < pow(10,g)){
+                        weights.hidden_layer[i] += (double)(decimal) * pow(10, -g);
+                        break;
+                    }
+                    g++;
+                }
+            }
+        }
+        fclose(fp);
+        return 0;
+    }
+}
+
 int save_weights(char *name_of_file, struct NN weights){
     int i;
     FILE *fp;
@@ -341,13 +408,19 @@ void rebuild_generation(struct NN *gen, int start_index, int max_index){
 void create_child(struct NN *gen, int parrent_index, int child_index){
     int i;
     for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
-        gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.5 * ((rand() % 100000) / 100000);
-        gen[child_index].input_layer[i] -= gen[parrent_index].input_layer[i] * 0.5 * ((rand() % 100000) / 100000);
+        if(rand() % 2 == 0){
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+        } else {
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+        }
     }
 
     for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
-        gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.5 * ((rand() % 100000) / 100000);
-        gen[child_index].hidden_layer[i] -= gen[parrent_index].input_layer[i] * 0.5 * ((rand() % 100000) / 100000);
+        if(rand() % 2 == 0){
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+        } else {
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].input_layer[i] * 0.005 * ((rand() % 100000) / 100000);
+        }
     }
 }
 
