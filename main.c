@@ -40,6 +40,7 @@ void create_child(struct NN *gen, int parrent_index, int child_index);
 void rebuild_generation(struct NN *gen, int start_index, int max_index);
 void train_NN(struct NN start_weigts, int NN_per_generation, int size);
 int load_weights(char *name_of_file, struct NN weights);
+double abs_val(double d);
 
 int main(void){
     struct NN first_instance;
@@ -146,7 +147,15 @@ void layer_transit(double *res, double *input, double *transit_weights, int n_la
 }
 
 double sigmoid(double d){
-    return (d/(sqrt(1 + pow(d, 2))));
+    return (d/(sqrt(1 + abs_val(d))));
+}
+
+double abs_val(double d){
+    if(d > 0){
+        return d;
+    } else {
+        return -d;
+    }
 }
 
 int game_play(struct NN ann, int size, int _bug_fix){
