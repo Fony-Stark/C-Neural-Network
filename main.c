@@ -161,14 +161,19 @@ double abs_val(double d){
 
 int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
-    int direction;
+    int direction, biggest = 0, i;
     initiaize_board(&b, size);
     while(create_new_element(&b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(&b, direction, _bug_fix);
-    }  
+    }
+    for(i = 0; i < size; i++){
+      if(b.board[i] > biggest){
+        biggest = b.board[i];
+      }
+    }
     free(b.board);
-    return b.score;
+    return (b.score + biggest * 5);
 }
 
 void make_game_move(struct Board *b, int direction, int _bug_fix){
@@ -312,7 +317,7 @@ int load_weights(char *name_of_file, struct NN weights){
                 number[j] = temp;
                 j++;
             }while(temp != ' ');
-            
+
             sscanf(number," %d.%d", &integer, &decimal);
             weights.hidden_layer[i] = (double)integer;
             if(decimal > 0){
@@ -340,7 +345,7 @@ int save_weights(char *name_of_file, struct NN weights){
     }
     for(i = 0; i < weights.hid * weights.out; i++){
         fprintf(fp, "%f ", weights.hidden_layer[i]);
-    }   
+    }
     fclose(fp);
 
     return 1;
@@ -355,7 +360,7 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     for(i = 1; i < NN_per_generation; i++){
         initiaize_nn(generation[0].in, generation[0].hid, generation[0].out, &generation[i]);
         create_child(generation, 0, i);
-    } 
+    }
     j = 0;
     while(1){
         average = 0;
@@ -482,6 +487,6 @@ void quickSort(struct NN *s, int left, int right){
         pivot = s[right].score;
         partitionPoint = partition(s, left, right, pivot);
         quickSort(s, left, partitionPoint - 1);
-        quickSort(s, partitionPoint+1, right); 
+        quickSort(s, partitionPoint+1, right);
     }
 }
