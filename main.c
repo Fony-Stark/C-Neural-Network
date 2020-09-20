@@ -97,6 +97,7 @@ void initiaize_nn(int neurons_input, int neurons_hidden, int neurons_out, struct
     weights->in = neurons_input;
     weights->hid = neurons_hidden;
     weights->out = neurons_out;
+    weights->score = 0;
 }
 
 void generate_new_weights(double *weights, int num_weights){
@@ -369,15 +370,14 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
             best = average;
         }
         quickSort(generation, 0, NN_per_generation - 1);
-        
-        if(j % 50 == 0){
+        if(j % 100 == 0){
             printf("this is generation [%5d] - The best NN got %5d - Average: %5d - Best: %5d - dif = %5d\n", j, generation[0].score, average, best, average - best);
         }
         if(j % 500){
             save_weights("weights", generation[0]);
         }
         kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
-        rebuild_generation(generation, NN_per_generation/2 - 1, NN_per_generation);
+        rebuild_generation(generation, NN_per_generation/2, NN_per_generation);
         j++;
     }
 }
@@ -406,9 +406,6 @@ void kill_half_generation(struct NN *gen, int generation_size, int kill){
 void rebuild_generation(struct NN *gen, int start_index, int max_index){
     int i, j;
     for(i = 0; i < start_index; i++){
-        if(max_index <= start_index*2){
-            break;
-        }
         create_child(gen, i, start_index+i);
     }
     j=0;
@@ -423,23 +420,25 @@ void create_child(struct NN *gen, int parrent_index, int child_index){
     int i;
     for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
         if(rand() % 2 == 0){
-            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * 0.005;
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * 0.005 - 0.00005;
         } else {
-            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.005;
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.005 + 0.00005;
         }
     }
 
     for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
         if(rand() % 2 == 0){
-            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.005;
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.005 + 0.00005;
         } else {
-            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].hidden_layer[i] * 0.005;
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].hidden_layer[i] * 0.005 - 0.00005;
         }
     }
 }
 
 void fix_arr(struct NN *gen, int index_empty, int max_index){
+    struct NN temp = gen[index_empty];
     gen[index_empty] = gen[max_index];
+    gen[max_index] = temp;
 }
 
 void swap(struct NN *s, int index_a, int index_b){
