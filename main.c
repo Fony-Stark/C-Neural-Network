@@ -381,10 +381,10 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
         if(j % 100 == 0){
             printf("this is generation [%5d] - The best NN got %5d - Average: %5d - Best: %5d - dif = %5d\n", j, generation[0].score, average, best, average - best);
         }
-        if(j % 500){
+        if(j % 500 == 0){
             save_weights("weights", generation[0]);
         }
-        if(j % 1000){
+        if(j % 1000 == 0){
             show_progress(generation[0]);
         }
         kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
@@ -400,8 +400,9 @@ void show_progress(struct NN item){
     while(create_new_element(&b) == 0){
         direction = calculate_output(item, b);
         make_game_move(&b, direction, 0);
+        print_board(b);
         save_board(b);
-    }  
+    } 
     free(b.board);
 }
 
