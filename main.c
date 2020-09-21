@@ -362,12 +362,8 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     for(i = 1; i < NN_per_generation; i++){
         initiaize_nn(generation[0].in, generation[0].hid, generation[0].out, &generation[i]);
         create_child(generation, 0, i);
-<<<<<<< HEAD
     } 
 
-=======
-    }
->>>>>>> ce88602973f2f9e68ee4ce631b884f853fb294b1
     j = 0;
     while(1){
         average = 0;
