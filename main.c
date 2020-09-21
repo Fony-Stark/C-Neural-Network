@@ -39,8 +39,10 @@ void fix_arr(struct NN *gen, int index_empty, int max_index);
 void create_child(struct NN *gen, int parrent_index, int child_index);
 void rebuild_generation(struct NN *gen, int start_index, int max_index);
 void train_NN(struct NN start_weigts, int NN_per_generation, int size);
+void save_board(struct Board k);
 int load_weights(char *name_of_file, struct NN weights);
 double abs_val(double d);
+void show_progress(struct NN item);
 
 int main(void){
     struct NN first_instance;
@@ -356,6 +358,7 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
         initiaize_nn(generation[0].in, generation[0].hid, generation[0].out, &generation[i]);
         create_child(generation, 0, i);
     } 
+
     j = 0;
     while(1){
         average = 0;
@@ -376,10 +379,38 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
         if(j % 500){
             save_weights("weights", generation[0]);
         }
+        if(j % 1000){
+            show_progress(generation[0]);
+        }
         kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
         rebuild_generation(generation, NN_per_generation/2, NN_per_generation);
         j++;
     }
+}
+
+void show_progress(struct NN item){
+    struct Board b;
+    int direction;
+    initiaize_board(&b, 16);
+    while(create_new_element(&b) == 0){
+        direction = calculate_output(item, b);
+        make_game_move(&b, direction, 0);
+        save_board(b);
+    }  
+    free(b.board);
+}
+
+void save_board(struct Board k){
+    int i;
+    FILE *fp;
+    fp = fopen("prove.txt", "a");
+
+    for(i = 0; i < k.size; i++){
+        fprintf(fp, "%d ", (int)k.board[i]);
+    }
+    fprintf(fp, "\n");
+
+    fclose(fp);
 }
 
 void kill_half_generation(struct NN *gen, int generation_size, int kill){
