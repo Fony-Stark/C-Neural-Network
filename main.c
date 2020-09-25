@@ -161,19 +161,39 @@ double abs_val(double d){
 
 int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
-    int direction, biggest = 0, i;
+    int direction, biggest = 0, index, next_up = 0, big = 0, i, sqr_size;
     initiaize_board(&b, size);
+    sqr_size = (int)sqrt(size);
+
     while(create_new_element(&b) == 0){
         direction = calculate_output(ann, b);
         make_game_move(&b, direction, _bug_fix);
     }
     for(i = 0; i < size; i++){
       if(b.board[i] > biggest){
+        big = biggest;
         biggest = b.board[i];
+        index = i;
+      }
+      if(b.board[i] > big && b.board[i] < biggest){
+        big = b.board[i];
       }
     }
+    if(index % sqr_size > 0){
+      next_up = b.board[index - 1];
+    }
+    if(index >= sqr_size){
+      next_up = (b.board[index - sqr_size] > next_up) ? b.board[index - sqr_size] : next_up;
+    }
+    if(index <= size - sqr_size - 1){
+      next_up = (b.board[index + sqr_size] > next_up) ? b.board[index + sqr_size] : next_up;
+    }
+    if(index % sqr_size < sqr_size - 1){
+      next_up = (b.board[index + 1] > next_up) ? b.board[index + 1] : next_up;
+    }
+    next_up = (big == next_up) ? next_up * 2 : next_up;
     free(b.board);
-    return (b.score + biggest * 5);
+    return (b.score + biggest * 5 + big * 5 + next_up);
 }
 
 void make_game_move(struct Board *b, int direction, int _bug_fix){
