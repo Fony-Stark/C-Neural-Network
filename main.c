@@ -39,8 +39,11 @@ void fix_arr(struct NN *gen, int index_empty, int max_index);
 void create_child(struct NN *gen, int parrent_index, int child_index);
 void rebuild_generation(struct NN *gen, int start_index, int max_index);
 void train_NN(struct NN start_weigts, int NN_per_generation, int size);
+void save_board(struct Board k);
 int load_weights(char *name_of_file, struct NN weights);
 double abs_val(double d);
+void show_progress(struct NN item);
+int move_possible(struct Board *b);
 
 int main(void){
     struct NN first_instance;
@@ -49,13 +52,13 @@ int main(void){
 
     /* initiaize_board(&in, 16); */
     first_instance.input_layer = NULL;
-    initiaize_nn(16, 10, 4, &first_instance);
+    initiaize_nn(16, 32, 4, &first_instance);
     if(load_weights("./weights",first_instance) == 404){
         generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
         generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
     }
 
-    train_NN(first_instance, 200, 16);
+    train_NN(first_instance, 500, 16);
 
     return 0;
 }
@@ -161,39 +164,67 @@ double abs_val(double d){
 
 int game_play(struct NN ann, int size, int _bug_fix){
     struct Board b;
-    int direction, biggest = 0, index, next_up = 0, big = 0, i, sqr_size;
+    int direction, i, directions[4], score_loss = 1, total_dir, delta;
+    int biggest[3], amounts[3];
+    amounts[0] = 0; amounts[1] = 0; amounts[2] = 0;
+    biggest[0] = 0; biggest[1] = 0; biggest[2] = 0;
+    directions[0] = 0; directions[1] = 0; directions[2] = 0; directions[3] = 0;
     initiaize_board(&b, size);
     sqr_size = (int)sqrt(size);
 
     while(create_new_element(&b) == 0){
         direction = calculate_output(ann, b);
+        if(direction == 0){
+            break;
+        }
+        directions[direction - 1] += 1;
         make_game_move(&b, direction, _bug_fix);
     }
     for(i = 0; i < size; i++){
-      if(b.board[i] > biggest){
-        big = biggest;
-        biggest = b.board[i];
-        index = i;
-      }
-      if(b.board[i] > big && b.board[i] < biggest){
-        big = b.board[i];
-      }
+      if(b.board[i] > biggest[0]){
+        biggest[0] = b.board[i];
+        amounts[0] = 1;
+      } else if(b.board[i] == biggest[0]){
+        amounts[0] += 1;
+      } else if(b.board[i] > biggest[1]){
+        biggest[1] = b.board[i];
+        amounts[1] = 1;
+      } else if(b.board[i] == biggest[1]){
+        amounts[1] += 1;
+      } else if(b.board[i] > biggest[2]){
+        biggest[2] = b.board[i];
+        amounts[2] = 1;
+      } else if(b.board[i] == biggest[2]){
+        amounts[2] += 1;
+      } 
     }
-    if(index % sqr_size > 0){
-      next_up = b.board[index - 1];
+    total_dir = directions[0] + directions[1] + directions[2] + directions[3];
+    if((directions[0] + directions[1]) >= total_dir - total_dir * 0.2){
+        score_loss = 5;
+    } else if((directions[2] + directions[3]) >= total_dir - total_dir * 0.2){
+        score_loss = 5;
     }
-    if(index >= sqr_size){
-      next_up = (b.board[index - sqr_size] > next_up) ? b.board[index - sqr_size] : next_up;
-    }
-    if(index <= size - sqr_size - 1){
-      next_up = (b.board[index + sqr_size] > next_up) ? b.board[index + sqr_size] : next_up;
-    }
-    if(index % sqr_size < sqr_size - 1){
-      next_up = (b.board[index + 1] > next_up) ? b.board[index + 1] : next_up;
-    }
-    next_up = (big == next_up) ? next_up * 2 : next_up;
+
+    score_loss += move_possible(&b); 
+    delta = (biggest[0] == b.board[b.size - 4]) ? 3 : 1;
     free(b.board);
-    return (b.score + biggest * 5 + big * 5 + next_up);
+    return (((b.score + biggest[0] * amounts[0] * 5 + biggest[1] + amounts[1] * 3 + biggest[2] * amounts[2] * 2) * delta) / score_loss);
+}
+
+int move_possible(struct Board *b){
+    int start_score, return_value = 0;
+    start_score = b->score;
+
+    make_game_move(b, 1, -1);
+    make_game_move(b, 2, -1);
+    make_game_move(b, 3, -1);
+    make_game_move(b, 4, -1);
+    
+    if(start_score != b->score){
+        return_value = 2;
+    }
+
+    return return_value;
 }
 
 void make_game_move(struct Board *b, int direction, int _bug_fix){
@@ -380,7 +411,8 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
     for(i = 1; i < NN_per_generation; i++){
         initiaize_nn(generation[0].in, generation[0].hid, generation[0].out, &generation[i]);
         create_child(generation, 0, i);
-    }
+    } 
+
     j = 0;
     while(1){
         average = 0;
@@ -398,13 +430,50 @@ void train_NN(struct NN start_weigts, int NN_per_generation, int size){
         if(j % 100 == 0){
             printf("this is generation [%5d] - The best NN got %5d - Average: %5d - Best: %5d - dif = %5d\n", j, generation[0].score, average, best, average - best);
         }
-        if(j % 500){
+        if(j % 500 == 0){
             save_weights("weights", generation[0]);
+        }
+        if(j % 1000 == 0){
+            show_progress(generation[0]);
         }
         kill_half_generation(generation, NN_per_generation, NN_per_generation/2);
         rebuild_generation(generation, NN_per_generation/2, NN_per_generation);
         j++;
     }
+}
+
+void show_progress(struct NN item){
+    struct Board b;
+    int direction;
+    int directions[4];
+    directions[0] = 0; directions[1] = 0; directions[2] = 0; directions[3] = 0;
+    initiaize_board(&b, 16);
+    while(create_new_element(&b) == 0){
+        direction = calculate_output(item, b);
+        if(direction == 0){
+            break;
+        }
+        directions[direction - 1] += 1;
+        make_game_move(&b, direction, 0);
+        save_board(b);
+    } 
+    /* 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT, 0 = debugging */
+    printf("Did UP:%3d, DOWN:%3d, LEFT:%3d, RIGHT:%3d, SCORE:%6d\n", directions[0], directions[1], directions[2], directions[3], b.score);
+    print_board(b);
+    free(b.board);
+}
+
+void save_board(struct Board k){
+    int i;
+    FILE *fp;
+    fp = fopen("prove.txt", "w");
+
+    for(i = 0; i < k.size; i++){
+        fprintf(fp, "%d ", (int)k.board[i]);
+    }
+    fprintf(fp, "\n");
+
+    fclose(fp);
 }
 
 void kill_half_generation(struct NN *gen, int generation_size, int kill){
@@ -443,19 +512,20 @@ void rebuild_generation(struct NN *gen, int start_index, int max_index){
 
 void create_child(struct NN *gen, int parrent_index, int child_index){
     int i;
+    double epsilon = 0.05;
     for(i = 0; i < (gen[parrent_index].in * gen[parrent_index].hid); i++){
         if(rand() % 2 == 0){
-            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * 0.005 - 0.00005;
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] - gen[parrent_index].input_layer[i] * epsilon;
         } else {
-            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * 0.005 + 0.00005;
+            gen[child_index].input_layer[i] = gen[parrent_index].input_layer[i] + gen[parrent_index].input_layer[i] * epsilon;
         }
     }
 
     for(i = 0; i < (gen[parrent_index].hid * gen[parrent_index].out); i++){
         if(rand() % 2 == 0){
-            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * 0.005 + 0.00005;
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] + gen[parrent_index].hidden_layer[i] * epsilon;
         } else {
-            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].hidden_layer[i] * 0.005 - 0.00005;
+            gen[child_index].hidden_layer[i] = gen[parrent_index].hidden_layer[i] - gen[parrent_index].hidden_layer[i] * epsilon;
         }
     }
 }
