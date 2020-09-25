@@ -52,7 +52,7 @@ int main(void){
 
     /* initiaize_board(&in, 16); */
     first_instance.input_layer = NULL;
-    initiaize_nn(16, 10, 4, &first_instance);
+    initiaize_nn(16, 32, 4, &first_instance);
     if(load_weights("./weights",first_instance) == 404){
         generate_new_weights(first_instance.input_layer, first_instance.in * first_instance.hid);
         generate_new_weights(first_instance.hidden_layer, first_instance.hid * first_instance.out);
@@ -456,7 +456,7 @@ void show_progress(struct NN item){
         save_board(b);
     } 
     /* 1 = UP, 2 = DOWN, 3 = LEFT, 4 = RIGHT, 0 = debugging */
-    printf("Did UP:%d, DOWN:%d, LEFT:%d, RIGHT:%d\n", directions[0], directions[1], directions[2], directions[3]);
+    printf("Did UP:%3d, DOWN:%3d, LEFT:%3d, RIGHT:%3d, SCORE:%6d\n", directions[0], directions[1], directions[2], directions[3], b.score);
     print_board(b);
     free(b.board);
 }
